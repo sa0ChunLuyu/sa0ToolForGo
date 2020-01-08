@@ -13,7 +13,7 @@ type Router struct {
 	Path   string
 	Method []string
 	Origin []string
-	Func   func(string)
+	Func   func(string, func(string), string)
 }
 
 var sa0Router []Router
@@ -30,13 +30,14 @@ func Server(router_ []Router) {
 		port = "2333"
 	}
 	http.HandleFunc("/", build_)
+	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(Sa0Path + "/assets"))))
 	fmt.Println("Server on http://127.0.0.1:" + port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
 func RouterInfo(key string) [][]string {
-	_, method := GetConfig_(key, "method")
-	_, origin := GetConfig_(key, "origin")
+	_, method := GetConfig_(key+"_router_info", "method")
+	_, origin := GetConfig_(key+"_router_info", "origin")
 	return [][]string{
 		strings.Split(method, ","),
 		strings.Split(origin, ","),
@@ -62,33 +63,36 @@ func build_(w http.ResponseWriter, r *http.Request) {
 	routeInfoArray := strings.Split(routeInfo, "/")
 	controllerName := routeInfoArray[0]
 	controllerState := false
-	controllerIndex := -1
-	for _, routerItem := range sa0Router {
-		controllerIndex++
+	for routerIndex, routerItem := range sa0Router {
 		if routerItem.Path == controllerName {
 			controllerState = true
+			methodState := false
+			for _, methodItem := range sa0Router[routerIndex].Method {
+				if methodItem == r.Method || methodItem == "*" {
+					methodState = true
+					break
+				}
+			}
+			if methodState {
+				Sa0W.Header().Set("Access-Control-Allow-Origin", "*")
+				Sa0W.Header().Add("Access-Control-Allow-Headers", "*")
+				Sa0W.Header().Set("content-type", "*")
+				functionName := routeInfoArray[1]
+				sa0Router[routerIndex].Func(functionName, Print_, Error_(map[string]string{
+					"message": "FUNCTION NOT FOUND",
+				}))
+			} else {
+				Print_(Error_(map[string]string{
+					"message": "REQUEST METHOD NOT ALLOW",
+				}))
+			}
 			break
 		}
 	}
-	if controllerState {
-		methodState := false
-		for _, methodItem := range sa0Router[controllerIndex].Method {
-			if methodItem == r.Method ||methodItem =="*" {
-				methodState = true
-				break
-			}
-		}
-		if methodState {
-			Sa0W.Header().Set("Access-Control-Allow-Origin", "*")
-			Sa0W.Header().Add("Access-Control-Allow-Headers", "*")
-			Sa0W.Header().Set("content-type", "*")
-			functionName := routeInfoArray[1]
-			sa0Router[controllerIndex].Func(functionName)
-		} else {
-			Print_("REQUEST METHOD NOT ALLOW")
-		}
-	} else {
-		Print_("CONTROLLER NOT FOUND")
+	if controllerState == false {
+		Print_(Error_(map[string]string{
+			"message": "CONTROLLER NOT FOUND",
+		}))
 	}
 }
 
@@ -104,4 +108,10 @@ func Print_(content string) {
 	_, _ = fmt.Fprintf(Sa0W, content+"\n")
 }
 
-//func View
+func Error_(data map[string]string) string {
+	view := Error
+	for key, value := range data {
+		view = strings.Replace(view, "<<."+key+">>", value, -1)
+	}
+	return view
+}

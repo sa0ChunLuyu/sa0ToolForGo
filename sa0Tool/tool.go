@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/Unknwon/goconfig"
 	"github.com/sa0ChunLuyu/sa0ToolForGo/sa0Server"
+	"io/ioutil"
+	"strings"
 )
 
 func Data_(key string) (bool, string) {
@@ -25,4 +27,16 @@ func GetConfig_(group_ string, key_ string) (bool, string) {
 	}
 	value_, err := cfg.GetValue(group_, key_)
 	return true, value_
+}
+
+func View_(path string, data map[string]string) string {
+	s, e := ioutil.ReadFile(path)
+	if e != nil {
+		panic(e)
+	}
+	view := string(s)
+	for key, value := range data {
+		view = strings.Replace(view, "<<."+key+">>", value, -1)
+	}
+	return view
 }
