@@ -23,14 +23,14 @@ func Config_(path_ string) {
 	Sa0Path = path_
 }
 
-func Server(router_ []Router) {
+func Server(router_ []Router, path_ string) {
 	sa0Router = router_
 	_, port := GetConfig_("server", "port")
 	if port == "" {
 		port = "2333"
 	}
-	http.HandleFunc("/", build_)
-	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(Sa0Path + "/assets"))))
+	http.HandleFunc(path_, build_)
+	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(Sa0Path+"/assets"))))
 	fmt.Println("Server on http://127.0.0.1:" + port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

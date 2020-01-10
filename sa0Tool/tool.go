@@ -5,6 +5,7 @@ import (
 	"github.com/Unknwon/goconfig"
 	"github.com/sa0ChunLuyu/sa0ToolForGo/sa0Server"
 	"io/ioutil"
+	"net/http"
 	"strings"
 )
 
@@ -14,6 +15,17 @@ func Data_(key string) (bool, string) {
 		return false, ""
 	}
 	return true, string(keys[0])
+}
+
+func Get_(url string) (bool, string) {
+	client := &http.Client{}
+	resp, err := client.Get(url)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false, ""
+	}
+	return true, string(body)
 }
 
 func Print_(content string) {
