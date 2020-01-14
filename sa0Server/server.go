@@ -18,17 +18,19 @@ type Router struct {
 
 var sa0Router []Router
 var Sa0Path string
+var Sa0Index string
 
 func Config_(path_ string) {
 	Sa0Path = path_
 }
 
-func Server(router_ []Router, path_ string) {
+func Server(router_ []Router, path_ string, index_ string) {
 	sa0Router = router_
 	_, port := GetConfig_("server", "port")
 	if port == "" {
 		port = "2333"
 	}
+	Sa0Index = index_
 	http.HandleFunc(path_, build_)
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(Sa0Path+"/assets"))))
 	fmt.Println("Server on http://127.0.0.1:" + port)
@@ -78,6 +80,7 @@ func build_(w http.ResponseWriter, r *http.Request) {
 				Sa0W.Header().Add("Access-Control-Allow-Headers", "*")
 				Sa0W.Header().Set("content-type", "*")
 				functionName := routeInfoArray[1]
+
 				sa0Router[routerIndex].Func(functionName, Print_, Error_(map[string]string{
 					"message": "FUNCTION NOT FOUND",
 				}))
@@ -90,9 +93,15 @@ func build_(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if controllerState == false {
-		Print_(Error_(map[string]string{
-			"message": "CONTROLLER NOT FOUND",
-		}))
+		if Sa0Index != "NOINDEX" {
+			Print_(Jump_(map[string]string{
+				"indexPath": Sa0Index,
+			}))
+		} else {
+			Print_(Error_(map[string]string{
+				"message": "CONTROLLER NOT FOUND",
+			}))
+		}
 	}
 }
 
@@ -106,6 +115,14 @@ func Data_(key string) (bool, string) {
 
 func Print_(content string) {
 	_, _ = fmt.Fprintf(Sa0W, content+"\n")
+}
+
+func Jump_(data map[string]string) string {
+	view := Jump
+	for key, value := range data {
+		view = strings.Replace(view, "<<."+key+">>", value, -1)
+	}
+	return view
 }
 
 func Error_(data map[string]string) string {
